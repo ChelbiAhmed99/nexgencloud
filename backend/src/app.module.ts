@@ -8,9 +8,11 @@ import { App } from './entities/app.entity';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AppsModule } from './apps/apps.module';
+import { AdminModule } from './admin/admin.module';
 import { Domain } from './entities/domain.entity';
 import { Quota } from './entities/quota.entity';
 import { Statistic } from './entities/statistic.entity';
+import { Infrastructure } from './entities/infrastructure.entity';
 
 @Module({
   imports: [
@@ -24,14 +26,15 @@ import { Statistic } from './entities/statistic.entity';
       username: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'hosting_db',
-      entities: [User, App, Domain, Quota, Statistic],
+      entities: [User, App, Domain, Quota, Statistic, Infrastructure],
       synchronize: true, // Only for development/PFE context
     }),
     AuthModule,
     UsersModule,
     AppsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

@@ -13,7 +13,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'super-secret-key-pfe',
+      secretOrKey:
+        configService.get<string>('JWT_SECRET') || 'super-secret-key-pfe',
     });
   }
 
@@ -22,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException();
     }
-    
+
     // If user has 2FA enabled, verify they actually passed 2FA step
     if (user.isTwoFactorEnabled && !payload.isTwoFactorAuthenticated) {
       // In a real app, you might throw a specific exception here to force them to 2FA page

@@ -16,7 +16,7 @@ export class UsersController {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      isTwoFactorEnabled: user.isTwoFactorEnabled
+      isTwoFactorEnabled: user.isTwoFactorEnabled,
     };
   }
 
@@ -26,10 +26,13 @@ export class UsersController {
   }
 
   @Put('profile')
-  async updateProfile(@Req() req, @Body() body: { firstName: string; lastName: string }) {
+  async updateProfile(
+    @Req() req,
+    @Body() body: { firstName: string; lastName: string },
+  ) {
     await this.usersService.update(req.user.id, {
       firstName: body.firstName,
-      lastName: body.lastName
+      lastName: body.lastName,
     });
     return this.getProfile(req);
   }

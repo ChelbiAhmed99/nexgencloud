@@ -93,6 +93,19 @@ CREATE TABLE `statistics` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table `infrastructure`
+-- --------------------------------------------------------
+CREATE TABLE `infrastructure` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `serverId` varchar(255) NOT NULL,
+  `healthState` enum('HEALTHY','DEGRADED','OFFLINE') NOT NULL DEFAULT 'HEALTHY',
+  `globalLoad` float NOT NULL DEFAULT 0.0,
+  `updatedAt` datetime(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `IDX_serverId` (`serverId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
 -- Insertion de données initiales (Admin par défaut)
 -- Login: admin@gmail.com / Password: admin123
 -- --------------------------------------------------------
@@ -101,5 +114,8 @@ INSERT INTO `users` (`email`, `password`, `firstName`, `lastName`, `role`, `isTw
 
 -- Création d'un quota par défaut pour l'admin
 INSERT INTO `quotas` (`storageLimit`, `instanceLimit`, `userId`) VALUES (5120, 10, 1);
+
+-- Enregistrement du serveur principal
+INSERT INTO `infrastructure` (`serverId`, `healthState`, `globalLoad`) VALUES ('server-main-01', 'HEALTHY', 0.0);
 
 COMMIT;

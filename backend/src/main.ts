@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -21,14 +22,29 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Validation : Transformer et valider automatiquement les données entrantes
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  // OpenAPI Setup
+  const config = new DocumentBuilder()
+    .setTitle('SecureHost API')
+    .setDescription('API for SecureHost Multi-tenant Web App Hosting Platform')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, documentFactory);
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
   logger.log(`🚀 Serveur de production prêt sur: http://localhost:${port}/api`);
+  logger.log(
+    `📚 Documentation OpenAPI disponible sur: http://localhost:${port}/api/docs`,
+  );
 }
 bootstrap();

@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../../users/users.service';
 import { User, UserRole } from '../../entities/user.entity';
@@ -16,19 +20,20 @@ export class AuthService {
     if (existingUser) {
       throw new ConflictException('Cet email est déjà utilisé');
     }
-    
+
     // Déterminer le rôle basé sur l'email
-    const role = userData.email === 'admin@gmail.com' ? UserRole.ADMIN : UserRole.USER;
-    
+    const role =
+      userData.email === 'admin@gmail.com' ? UserRole.ADMIN : UserRole.USER;
+
     return this.usersService.create({
       ...userData,
-      role
+      role,
     });
   }
 
   async validateUser(email: string, pass: string): Promise<User | null> {
     const user = await this.usersService.findByEmail(email);
-    if (user && await bcrypt.compare(pass, user.password)) {
+    if (user && (await bcrypt.compare(pass, user.password))) {
       const { password, ...result } = user;
       return user;
     }
@@ -85,7 +90,7 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         isTwoFactorEnabled: user.isTwoFactorEnabled,
-      }
+      },
     };
   }
 }

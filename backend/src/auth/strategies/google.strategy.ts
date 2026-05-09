@@ -11,17 +11,26 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private readonly authService: AuthService,
   ) {
     super({
-      clientID: configService.get<string>('GOOGLE_CLIENT_ID') || 'placeholder-client-id',
-      clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET') || 'placeholder-client-secret',
+      clientID:
+        configService.get<string>('GOOGLE_CLIENT_ID') ||
+        'placeholder-client-id',
+      clientSecret:
+        configService.get<string>('GOOGLE_CLIENT_SECRET') ||
+        'placeholder-client-secret',
       callbackURL: 'http://localhost:3000/api/auth/google/callback',
       scope: ['email', 'profile'],
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: VerifyCallback,
+  ): Promise<any> {
     try {
       const { name, emails, id } = profile;
-      
+
       if (!emails || emails.length === 0) {
         return done(new Error('No email found in Google profile'), null);
       }
@@ -31,9 +40,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         name?.givenName || 'Utilisateur',
         name?.familyName || 'Google',
         'google',
-        id
+        id,
       );
-      
+
       return done(null, user);
     } catch (error) {
       return done(error, null);

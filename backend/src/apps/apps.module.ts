@@ -3,10 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppsService } from './apps.service';
 import { AppsController } from './apps.controller';
 import { App } from '../entities/app.entity';
-import { DockerModule } from '../docker/docker.module';
+import { Statistic } from '../entities/statistic.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([App]), DockerModule],
+  imports: [TypeOrmModule.forFeature([App, Statistic])],
   providers: [AppsService],
   controllers: [AppsController],
 })

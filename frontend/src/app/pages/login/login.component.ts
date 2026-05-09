@@ -319,10 +319,10 @@ export class LoginComponent implements OnInit {
   formData = { email: '', password: '', firstName: '', lastName: '' };
 
   constructor(
-    private authService: AuthService, 
+    private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
@@ -336,20 +336,20 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  toggleMode() { 
-    this.isLoginMode = !this.isLoginMode; 
+  toggleMode() {
+    this.isLoginMode = !this.isLoginMode;
     this.errorMessage = '';
   }
 
-  loginWithOAuth(p: string) { 
-    window.location.href = `http://localhost:3000/api/auth/${p}`; 
+  loginWithOAuth(p: string) {
+    window.location.href = `http://localhost:3000/api/auth/${p}`;
   }
 
   onSubmit() {
     this.isLoading = true;
     this.errorMessage = '';
 
-    const obs = this.isLoginMode 
+    const obs = this.isLoginMode
       ? this.authService.login({ email: this.formData.email, password: this.formData.password })
       : this.authService.signup(this.formData);
 

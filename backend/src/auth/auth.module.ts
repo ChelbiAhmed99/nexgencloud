@@ -18,7 +18,8 @@ import { UsersModule } from '../users/users.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'super-secret-key-pfe',
+        secret:
+          configService.get<string>('JWT_SECRET') || 'super-secret-key-pfe',
         signOptions: { expiresIn: '1d' },
       }),
     }),

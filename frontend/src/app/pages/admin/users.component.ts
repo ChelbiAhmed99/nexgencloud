@@ -82,7 +82,7 @@ export class UsersComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.http.get<any[]>('http://localhost:3000/api/users', { headers: this.getHeaders() })
+    this.http.get<any[]>('http://localhost:3000/api/admin/users', { headers: this.getHeaders() })
       .subscribe({
         next: (data) => {
           this.users = data.map(user => {
