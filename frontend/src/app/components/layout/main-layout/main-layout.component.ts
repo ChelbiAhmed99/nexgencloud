@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { ToastComponent } from '../../toast/toast.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, NavbarComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, NavbarComponent, ToastComponent],
   template: `
     <div class="app-container" [class.collapsed]="isCollapsed">
       <app-sidebar [isCollapsed]="isCollapsed" (toggle)="toggleSidebar()"></app-sidebar>
@@ -17,6 +18,7 @@ import { NavbarComponent } from '../navbar/navbar.component';
           <router-outlet></router-outlet>
         </main>
       </div>
+      <app-toast-container></app-toast-container>
     </div>
   `,
   styles: [`

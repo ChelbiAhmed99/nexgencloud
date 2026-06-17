@@ -13,8 +13,9 @@ async function bootstrap() {
   app.use(helmet());
 
   // Sécurité : Configurer le CORS pour n'accepter que le frontend
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
   app.enableCors({
-    origin: 'http://localhost:4200',
+    origin: [frontendUrl, 'http://localhost:4200'],
     credentials: true,
   });
 
@@ -41,8 +42,8 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, documentFactory);
 
   const port = process.env.PORT || 3000;
-  await app.listen(port);
-  logger.log(`🚀 Serveur de production prêt sur: http://localhost:${port}/api`);
+  await app.listen(port, '0.0.0.0');
+  logger.log(`🚀 Serveur de production prêt sur: http://0.0.0.0:${port}/api`);
   logger.log(
     `📚 Documentation OpenAPI disponible sur: http://localhost:${port}/api/docs`,
   );

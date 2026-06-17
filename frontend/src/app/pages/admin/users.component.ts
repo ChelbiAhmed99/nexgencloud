@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ToastService } from '../../services/toast.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-users',
@@ -43,8 +45,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
           </div>
           <span class="date">{{ user.lastSeen }}</span>
           <div class="actions">
-            <button class="btn-icon">✏️</button>
-            <button class="btn-icon danger">🗑️</button>
+            <button class="btn-icon" (click)="editUser(user.id)">✏️</button>
+            <button class="btn-icon danger" (click)="deleteUser(user.id)">🗑️</button>
           </div>
         </div>
       </div>
@@ -70,7 +72,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 export class UsersComponent implements OnInit {
   users: any[] = [];
   
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private toastService: ToastService) {}
 
   getHeaders() {
     const s = localStorage.getItem('user_session');
@@ -82,7 +84,11 @@ export class UsersComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.http.get<any[]>('http://localhost:3000/api/admin/users', { headers: this.getHeaders() })
+    this.loadUsers();
+  }
+
+  loadUsers() {
+    this.http.get<any[]>(`${environment.apiUrl}/admin/users`, { headers: this.getHeaders() })
       .subscribe({
         next: (data) => {
           this.users = data.map(user => {
@@ -98,7 +104,27 @@ export class UsersComponent implements OnInit {
             };
           });
         },
-        error: (err) => console.error('Erreur chargement utilisateurs', err)
+        error: (err) => {
+          console.error('Erreur chargement utilisateurs', err);
+          this.toastService.showError('Erreur', 'Impossible de charger la liste des utilisateurs.');
+        }
       });
+  }
+
+  deleteUser(id: number) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+      this.http.delete(`${environment.apiUrl}/admin/users/${id}`, { headers: this.getHeaders() })
+        .subscribe({
+          next: () => {
+            this.toastService.showSuccess('Succès', 'Utilisateur supprimé.');
+            this.loadUsers();
+          },
+          error: () => this.toastService.showError('Erreur', "Impossible de supprimer l'utilisateur.")
+        });
+    }
+  }
+
+  editUser(id: number) {
+    this.toastService.showInfo('Info', "L'édition d'utilisateurs sera disponible prochainement.");
   }
 }

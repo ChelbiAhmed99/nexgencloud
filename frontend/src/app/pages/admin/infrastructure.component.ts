@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-infrastructure',
@@ -70,11 +72,35 @@ import { CommonModule } from '@angular/common';
     }
   `]
 })
-export class InfrastructureComponent {
-  nodes = [
-    { name: 'Node-Primary-01', ip: '10.0.0.1', cpu: 45, ram: 62, containers: 24, status: 'online', uptime: '12d 4h' },
-    { name: 'Node-Worker-02', ip: '10.0.0.2', cpu: 12, ram: 18, containers: 8, status: 'online', uptime: '45d 1h' },
-    { name: 'Node-Worker-03', ip: '10.0.0.3', cpu: 85, ram: 92, containers: 42, status: 'online', uptime: '2d 18h' },
-    { name: 'Node-Backup-01', ip: '10.0.0.4', cpu: 0, ram: 0, containers: 0, status: 'offline', uptime: '0s' }
-  ];
+export class InfrastructureComponent implements OnInit, OnDestroy {
+  nodes: any[] = [];
+  interval: any;
+
+  constructor(private http: HttpClient) {}
+
+  getHeaders() {
+    const s = localStorage.getItem('user_session');
+    let token = '';
+    if (s) {
+      try { token = JSON.parse(s).token; } catch (e) {}
+    }
+    return new HttpHeaders({ Authorization: `Bearer ${token}` });
+  }
+
+  ngOnInit() {
+    this.fetchNodes();
+    this.interval = setInterval(() => this.fetchNodes(), 3000); // Poll every 3s
+  }
+
+  ngOnDestroy() {
+    if (this.interval) clearInterval(this.interval);
+  }
+
+  fetchNodes() {
+    this.http.get<any[]>(`${environment.apiUrl}/admin/infrastructure`, { headers: this.getHeaders() })
+      .subscribe({
+        next: (data) => this.nodes = data,
+        error: (err) => console.error('Erreur chargement infra', err)
+      });
+  }
 }

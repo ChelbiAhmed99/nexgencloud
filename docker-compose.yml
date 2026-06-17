@@ -1,0 +1,89 @@
+# ============================================
+# NexGen Cloud — Docker Compose
+# Architecture: MySQL + NestJS + Angular/Nginx
+# ============================================
+# Usage:
+#   docker compose up -d --build
+#   docker compose down
+#   docker compose logs -f
+# ============================================
+
+services:
+  # ---- Base de Données MySQL ----
+  db:
+    image: mysql:8.0
+    container_name: nexgen-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-nexgen_root_2026}
+      MYSQL_DATABASE: ${DB_NAME:-hosting_db}
+      MYSQL_USER: ${DB_USER:-nexgen}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-nexgen_pass_2026}
+    ports:
+      - "${DB_PORT_EXPOSED:-3307}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./base_de_donnees.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-nexgen_root_2026}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - nexgen-network
+
+  # ---- Backend API (NestJS) ----
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexgen-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-nexgen}
+      DB_PASSWORD: ${DB_PASSWORD:-nexgen_pass_2026}
+      DB_NAME: ${DB_NAME:-hosting_db}
+      JWT_SECRET: ${JWT_SECRET:-h7B9!kL$2mPqZ5vR8wX1yN4}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - nexgen-network
+
+  # ---- Frontend (Angular + Nginx) ----
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nexgen-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - nexgen-network
+
+# ---- Volumes persistants ----
+volumes:
+  mysql_data:
+    driver: local
+
+# ---- Réseau interne ----
+networks:
+  nexgen-network:
+    driver: bridge

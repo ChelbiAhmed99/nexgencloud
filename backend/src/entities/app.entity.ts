@@ -39,7 +39,7 @@ export class App {
   @Column({ nullable: true })
   customDomain: string;
 
-  @ManyToOne(() => User, (user) => user.id, { eager: true })
+  @ManyToOne(() => User, { eager: true })
   owner: User;
 
   @CreateDateColumn()

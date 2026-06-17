@@ -23,6 +23,7 @@ CREATE TABLE `users` (
   `role` enum('user','admin') NOT NULL DEFAULT 'user',
   `googleId` varchar(255) DEFAULT NULL,
   `githubId` varchar(255) DEFAULT NULL,
+  `microsoftId` varchar(255) DEFAULT NULL,
   `isTwoFactorEnabled` tinyint(1) NOT NULL DEFAULT 0,
   `twoFactorSecret` varchar(255) DEFAULT NULL,
   `createdAt` datetime(6) NOT NULL DEFAULT current_timestamp(6),
@@ -57,11 +58,37 @@ CREATE TABLE `domains` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `url` varchar(255) NOT NULL,
   `isActive` tinyint(1) NOT NULL DEFAULT 1,
+  `verificationStatus` enum('PENDING','VERIFIED','FAILED') NOT NULL DEFAULT 'PENDING',
+  `verificationToken` varchar(255) DEFAULT NULL,
   `appId` int(11) DEFAULT NULL,
+  `ownerId` int(11) DEFAULT NULL,
+  `createdAt` datetime(6) NOT NULL DEFAULT current_timestamp(6),
+  `updatedAt` datetime(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
   PRIMARY KEY (`id`),
   UNIQUE KEY `IDX_url` (`url`),
   UNIQUE KEY `REL_domains_app` (`appId`),
-  CONSTRAINT `FK_domains_app` FOREIGN KEY (`appId`) REFERENCES `apps` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `FK_domains_owner` (`ownerId`),
+  CONSTRAINT `FK_domains_app` FOREIGN KEY (`appId`) REFERENCES `apps` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `FK_domains_owner` FOREIGN KEY (`ownerId`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table `dns_records`
+-- --------------------------------------------------------
+CREATE TABLE `dns_records` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` enum('A','AAAA','CNAME','MX','TXT','NS','SRV') NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `value` varchar(512) NOT NULL,
+  `ttl` int(11) NOT NULL DEFAULT 3600,
+  `priority` int(11) DEFAULT NULL,
+  `isActive` tinyint(1) NOT NULL DEFAULT 1,
+  `domainId` int(11) DEFAULT NULL,
+  `createdAt` datetime(6) NOT NULL DEFAULT current_timestamp(6),
+  `updatedAt` datetime(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  PRIMARY KEY (`id`),
+  KEY `FK_dns_records_domain` (`domainId`),
+  CONSTRAINT `FK_dns_records_domain` FOREIGN KEY (`domainId`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------

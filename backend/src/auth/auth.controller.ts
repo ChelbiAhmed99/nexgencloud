@@ -8,6 +8,7 @@ import {
   Body,
   UnauthorizedException,
   HttpCode,
+  Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -19,11 +20,18 @@ import {
 import { AuthService } from './services/auth.service';
 import { TwoFactorService } from './services/two-factor.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import {
+  GoogleCallbackGuard,
+  GithubCallbackGuard,
+  MicrosoftCallbackGuard,
+} from './guards/oauth-callback.guard';
 import { UsersService } from '../users/users.service';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly twoFactorService: TwoFactorService,
@@ -54,19 +62,47 @@ export class AuthController {
     return this.authService.login(user);
   }
 
+  // ========================
+  // SESSION
+  // ========================
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get the current authenticated user profile' })
+  @ApiResponse({ status: 200, description: 'Current user profile.' })
+  async getMe(@Req() req) {
+    return {
+      id: req.user.id,
+      email: req.user.email,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName,
+      role: req.user.role,
+      isTwoFactorEnabled: req.user.isTwoFactorEnabled,
+      googleId: req.user.googleId || null,
+      githubId: req.user.githubId || null,
+      microsoftId: req.user.microsoftId || null,
+    };
+  }
+
+  // ========================
+  // OAUTH PROVIDERS
+  // ========================
+
   @Get('google')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Initiate Google OAuth' })
   async googleAuth(@Req() req) {}
 
   @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleCallbackGuard)
   async googleAuthRedirect(@Req() req, @Res() res) {
     try {
       if (!req.user) {
-        return res.redirect('http://localhost:4200/login?error=auth_failed');
+        this.logger.error('[Google Callback] No user on request after guard');
+        return res.redirect('http://localhost:4200/login?error=google_auth_failed');
       }
-      const { access_token, user } = this.authService.login(req.user);
+      const { access_token, user } = this.authService.login(req.user, false, 'google');
       if (user.isTwoFactorEnabled) {
         return res.redirect(
           `http://localhost:4200/login/2fa?token=${access_token}`,
@@ -76,8 +112,8 @@ export class AuthController {
         `http://localhost:4200/login/success?token=${access_token}`,
       );
     } catch (error) {
-      console.error('Google Auth Error:', error);
-      return res.redirect('http://localhost:4200/login?error=server_error');
+      this.logger.error(`[Google Callback] Error: ${error.message}`, error.stack);
+      return res.redirect('http://localhost:4200/login?error=google_server_error');
     }
   }
 
@@ -87,13 +123,14 @@ export class AuthController {
   async githubAuth(@Req() req) {}
 
   @Get('github/callback')
-  @UseGuards(AuthGuard('github'))
+  @UseGuards(GithubCallbackGuard)
   async githubAuthRedirect(@Req() req, @Res() res) {
     try {
       if (!req.user) {
-        return res.redirect('http://localhost:4200/login?error=auth_failed');
+        this.logger.error('[GitHub Callback] No user on request after guard');
+        return res.redirect('http://localhost:4200/login?error=github_auth_failed');
       }
-      const { access_token, user } = this.authService.login(req.user);
+      const { access_token, user } = this.authService.login(req.user, false, 'github');
       if (user.isTwoFactorEnabled) {
         return res.redirect(
           `http://localhost:4200/login/2fa?token=${access_token}`,
@@ -103,10 +140,42 @@ export class AuthController {
         `http://localhost:4200/login/success?token=${access_token}`,
       );
     } catch (error) {
-      console.error('GitHub Auth Error:', error);
-      return res.redirect('http://localhost:4200/login?error=server_error');
+      this.logger.error(`[GitHub Callback] Error: ${error.message}`, error.stack);
+      return res.redirect('http://localhost:4200/login?error=github_server_error');
     }
   }
+
+  @Get('microsoft')
+  @UseGuards(AuthGuard('microsoft'))
+  @ApiOperation({ summary: 'Initiate Microsoft OAuth' })
+  async microsoftAuth(@Req() req) {}
+
+  @Get('microsoft/callback')
+  @UseGuards(MicrosoftCallbackGuard)
+  async microsoftAuthRedirect(@Req() req, @Res() res) {
+    try {
+      if (!req.user) {
+        this.logger.error('[Microsoft Callback] No user on request after guard');
+        return res.redirect('http://localhost:4200/login?error=microsoft_auth_failed');
+      }
+      const { access_token, user } = this.authService.login(req.user, false, 'microsoft');
+      if (user.isTwoFactorEnabled) {
+        return res.redirect(
+          `http://localhost:4200/login/2fa?token=${access_token}`,
+        );
+      }
+      return res.redirect(
+        `http://localhost:4200/login/success?token=${access_token}`,
+      );
+    } catch (error) {
+      this.logger.error(`[Microsoft Callback] Error: ${error.message}`, error.stack);
+      return res.redirect('http://localhost:4200/login?error=microsoft_server_error');
+    }
+  }
+
+  // ========================
+  // TWO-FACTOR AUTHENTICATION
+  // ========================
 
   @Post('2fa/generate')
   @UseGuards(JwtAuthGuard)

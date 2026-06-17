@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards, Param } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Body, UseGuards, Param } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -21,6 +21,23 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'List of users.' })
   async getUsers() {
     return this.adminService.getAllUsers();
+  }
+
+  @Put('users/:id')
+  @ApiOperation({ summary: 'Update a user (Admin)' })
+  @ApiResponse({ status: 200, description: 'User updated successfully.' })
+  async updateUser(
+    @Param('id') id: string,
+    @Body() body: { firstName?: string; lastName?: string; role?: string },
+  ) {
+    return this.adminService.updateUser(Number(id), body);
+  }
+
+  @Delete('users/:id')
+  @ApiOperation({ summary: 'Delete a user (Admin)' })
+  @ApiResponse({ status: 200, description: 'User deleted successfully.' })
+  async deleteUser(@Param('id') id: string) {
+    return this.adminService.deleteUser(Number(id));
   }
 
   @Put('quotas/:userId')

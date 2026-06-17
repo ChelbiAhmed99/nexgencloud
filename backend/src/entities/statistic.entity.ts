@@ -24,6 +24,6 @@ export class Statistic {
   @CreateDateColumn()
   timestamp: Date;
 
-  @ManyToOne(() => App, (app) => app.id)
+  @ManyToOne(() => App)
   app: App;
 }

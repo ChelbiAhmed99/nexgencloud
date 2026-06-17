@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router, ActivatedRoute } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -76,6 +77,10 @@ import { Router, ActivatedRoute } from '@angular/router';
               <button class="social-btn glass-card" (click)="loginWithOAuth('github')">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.34-3.369-1.34-.454-1.152-1.11-1.458-1.11-1.458-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
                 GitHub
+              </button>
+              <button class="social-btn glass-card" (click)="loginWithOAuth('microsoft')">
+                <svg width="20" height="20" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+                Microsoft
               </button>
             </div>
 
@@ -316,7 +321,14 @@ export class LoginComponent implements OnInit {
   isLoginMode = true;
   isLoading = false;
   errorMessage = '';
+  loadingProvider = '';
   formData = { email: '', password: '', firstName: '', lastName: '' };
+
+  private providerNames: Record<string, string> = {
+    google: 'Google',
+    github: 'GitHub',
+    microsoft: 'Microsoft'
+  };
 
   constructor(
     private authService: AuthService,
@@ -327,10 +339,23 @@ export class LoginComponent implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
       if (params['error']) {
-        if (params['error'] === 'auth_failed') {
-          this.errorMessage = "L'authentification Google a échoué. Veuillez réessayer.";
-        } else if (params['error'] === 'server_error') {
-          this.errorMessage = "Une erreur serveur est survenue lors de la connexion Google.";
+        const error = params['error'] as string;
+
+        // Provider-specific error messages
+        if (error.includes('google')) {
+          this.errorMessage = error.includes('server')
+            ? "Une erreur serveur est survenue lors de la connexion Google."
+            : "L'authentification Google a échoué. Veuillez réessayer.";
+        } else if (error.includes('github')) {
+          this.errorMessage = error.includes('server')
+            ? "Une erreur serveur est survenue lors de la connexion GitHub."
+            : "L'authentification GitHub a échoué. Veuillez réessayer.";
+        } else if (error.includes('microsoft')) {
+          this.errorMessage = error.includes('server')
+            ? "Une erreur serveur est survenue lors de la connexion Microsoft."
+            : "L'authentification Microsoft a échoué. Veuillez réessayer.";
+        } else {
+          this.errorMessage = "Une erreur est survenue lors de l'authentification.";
         }
       }
     });
@@ -342,7 +367,8 @@ export class LoginComponent implements OnInit {
   }
 
   loginWithOAuth(p: string) {
-    window.location.href = `http://localhost:3000/api/auth/${p}`;
+    this.loadingProvider = p;
+    window.location.href = `${environment.apiUrl}/auth/${p}`;
   }
 
   onSubmit() {

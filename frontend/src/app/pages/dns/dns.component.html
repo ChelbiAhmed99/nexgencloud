@@ -1,0 +1,293 @@
+<div class="dns-page fade-in">
+
+
+  <div class="page-header">
+    <div>
+      <h1>🌐 Gestion DNS</h1>
+      <p class="subtitle">Gérez vos zones DNS et enregistrements professionnellement.</p>
+    </div>
+    <button class="btn-primary" (click)="showAddDomain = true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Ajouter un domaine
+    </button>
+  </div>
+
+  <!-- Add Domain Modal -->
+  <div class="modal-overlay" *ngIf="showAddDomain" (click)="showAddDomain = false">
+    <div class="modal glass-card" (click)="$event.stopPropagation()">
+      <h3>Ajouter un domaine</h3>
+      <p class="modal-desc">Entrez le nom de domaine que vous souhaitez gérer.</p>
+      <div class="input-field">
+        <label>Nom de domaine</label>
+        <input type="text" [(ngModel)]="newDomainUrl" placeholder="exemple.com" class="form-control" (keyup.enter)="addDomain()">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" (click)="showAddDomain = false">Annuler</button>
+        <button class="btn-primary" (click)="addDomain()" [disabled]="!newDomainUrl.trim()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="loader"></div>
+    <p>Chargement des domaines...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div class="dns-layout" *ngIf="!isLoading">
+    <!-- Domain List Panel -->
+    <div class="domains-panel glass-card">
+      <h3 class="panel-title">Mes domaines</h3>
+      <div class="domain-list" *ngIf="domains.length > 0">
+        <div class="domain-item" *ngFor="let d of domains"
+             [class.selected]="selectedDomain?.id === d.id"
+             (click)="selectDomain(d)">
+          <div class="domain-info">
+            <div class="domain-name">{{ d.url }}</div>
+            <span class="status-badge" [ngClass]="getStatusClass(d.verificationStatus)">
+              {{ getStatusLabel(d.verificationStatus) }}
+            </span>
+          </div>
+          <div class="domain-meta">
+            <span class="record-count">{{ d.dnsRecords.length || 0 }} enreg.</span>
+            <div class="domain-actions">
+              <button class="icon-btn" title="Vérifier" *ngIf="d.verificationStatus === 'PENDING'" (click)="verifyDomain(d.id); $event.stopPropagation()">✓</button>
+              <button class="icon-btn danger" title="Supprimer" (click)="deleteDomain(d.id); $event.stopPropagation()">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="empty-state" *ngIf="domains.length === 0">
+        <p>Aucun domaine configuré.</p>
+        <button class="btn-primary btn-sm" (click)="showAddDomain = true">Ajouter</button>
+      </div>
+    </div>
+
+    <!-- DNS Records Panel -->
+    <div class="records-panel" *ngIf="selectedDomain">
+      <div class="records-header">
+        <div>
+          <h3>{{ selectedDomain.url }}</h3>
+          <p class="token-info" *ngIf="selectedDomain.verificationStatus === 'PENDING'">
+            Token TXT : <code>{{ selectedDomain.verificationToken }}</code>
+          </p>
+        </div>
+        <div class="header-btn-group">
+          <button class="btn-outline btn-sm" (click)="checkPropagation()" title="Vérifier la propagation DNS">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            Propagation
+          </button>
+          <button class="btn-outline btn-sm" (click)="exportZone()" title="Exporter le fichier de zone BIND">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export
+          </button>
+          <button class="btn-outline btn-sm" (click)="openBulkImport()" title="Import en masse">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Import
+          </button>
+          <button class="btn-primary btn-sm" (click)="openAddRecord()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Nouvel enregistrement
+          </button>
+        </div>
+      </div>
+
+      <!-- Domain Stats -->
+      <div class="stats-grid" *ngIf="domainStats">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(79,70,229,0.1); color: #4f46e5;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ domainStats.totalRecords }}</div>
+            <div class="stat-label">Total enregistrements</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(16,185,129,0.1); color: #10b981;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ domainStats.activeRecords }}</div>
+            <div class="stat-label">Actifs</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(239,68,68,0.1); color: #ef4444;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ domainStats.inactiveRecords }}</div>
+            <div class="stat-label">Inactifs</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(245,158,11,0.1); color: #f59e0b;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ domainStats.byType.length }}</div>
+            <div class="stat-label">Types utilisés</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Type Breakdown Badges -->
+      <div class="type-breakdown" *ngIf="domainStats && domainStats.byType.length > 0">
+        <span class="type-count-badge" *ngFor="let t of domainStats.byType" [style.border-color]="getTypeColor(t.type)">
+          <span class="type-dot" [style.background]="getTypeColor(t.type)"></span>
+          {{ t.type }} <strong>{{ t.count }}</strong>
+        </span>
+      </div>
+
+      <!-- Propagation Panel -->
+      <div class="propagation-panel glass-card" *ngIf="showPropagation">
+        <div class="propagation-header">
+          <h4>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            Propagation DNS
+          </h4>
+          <div class="propagation-progress" *ngIf="!isPropagationLoading">
+            <div class="progress-ring">
+              <span class="progress-value">{{ getPropagationPercent() }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="propagation-loading" *ngIf="isPropagationLoading">
+          <div class="loader-sm"></div>
+          <span>Interrogation des serveurs DNS mondiaux...</span>
+        </div>
+
+        <div class="propagation-grid" *ngIf="!isPropagationLoading && propagationServers.length > 0">
+          <div class="prop-server" *ngFor="let s of propagationServers">
+            <div class="prop-status-dot" [class.propagated]="s.status === 'PROPAGATED'"></div>
+            <div class="prop-info">
+              <div class="prop-name">{{ s.name }}</div>
+              <div class="prop-location">{{ s.location }}</div>
+            </div>
+            <div class="prop-meta">
+              <span class="prop-time">{{ s.responseTime }}ms</span>
+              <span class="prop-badge" [class.ok]="s.status === 'PROPAGATED'">
+                {{ s.status === 'PROPAGATED' ? '✓ Propagé' : '⏳ En attente' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-ghost btn-sm" style="margin-top: 1rem;" (click)="showPropagation = false">Fermer</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <button *ngFor="let f of filterTypes" class="filter-chip"
+                [class.active]="activeFilter === f" (click)="setFilter(f)">
+          {{ f }}
+        </button>
+      </div>
+
+      <!-- Records Table -->
+      <div class="records-table glass-card" *ngIf="filteredRecords.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Nom</th>
+              <th>Valeur</th>
+              <th>TTL</th>
+              <th>Priorité</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of filteredRecords" [class.inactive]="!r.isActive">
+              <td><span class="type-badge" [style.background]="getTypeColor(r.type)">{{ r.type }}</span></td>
+              <td class="mono">{{ r.name }}</td>
+              <td class="mono value-cell">{{ r.value }}</td>
+              <td>{{ r.ttl }}s</td>
+              <td>{{ r.priority !== null ? r.priority : '—' }}</td>
+              <td>
+                <span class="active-badge" [class.on]="r.isActive">{{ r.isActive ? 'Actif' : 'Inactif' }}</span>
+              </td>
+              <td class="actions-cell">
+                <button class="icon-btn" title="Modifier" (click)="openEditRecord(r)">✎</button>
+                <button class="icon-btn" title="Basculer" (click)="toggleRecord(r.id)">⏻</button>
+                <button class="icon-btn danger" title="Supprimer" (click)="deleteRecord(r.id)">✕</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-records glass-card" *ngIf="filteredRecords.length === 0">
+        <p>Aucun enregistrement {{ activeFilter !== 'ALL' ? 'de type ' + activeFilter : '' }} trouvé.</p>
+      </div>
+    </div>
+
+    <div class="no-selection glass-card" *ngIf="!selectedDomain && domains.length > 0">
+      <p>Sélectionnez un domaine pour voir ses enregistrements DNS.</p>
+    </div>
+  </div>
+
+  <!-- Record Modal -->
+  <div class="modal-overlay" *ngIf="showRecordModal" (click)="showRecordModal = false">
+    <div class="modal glass-card modal-lg" (click)="$event.stopPropagation()">
+      <h3>{{ isEditMode ? 'Modifier' : 'Ajouter' }} un enregistrement DNS</h3>
+      <div class="form-grid">
+        <div class="input-field" *ngIf="!isEditMode">
+          <label>Type</label>
+          <select [(ngModel)]="recordForm.type" class="form-control">
+            <option *ngFor="let t of recordTypes" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+        <div class="input-field">
+          <label>Nom</label>
+          <input type="text" [(ngModel)]="recordForm.name" placeholder="@ ou sous-domaine" class="form-control">
+        </div>
+        <div class="input-field full-width">
+          <label>Valeur</label>
+          <input type="text" [(ngModel)]="recordForm.value" class="form-control"
+                 [placeholder]="recordForm.type === 'A' ? '192.168.1.1' : recordForm.type === 'CNAME' ? 'cible.exemple.com' : recordForm.type === 'TXT' ? 'v=spf1 include:...' : 'valeur'">
+        </div>
+        <div class="input-field">
+          <label>TTL (secondes)</label>
+          <input type="number" [(ngModel)]="recordForm.ttl" class="form-control" min="60">
+        </div>
+        <div class="input-field" *ngIf="needsPriority()">
+          <label>Priorité</label>
+          <input type="number" [(ngModel)]="recordForm.priority" class="form-control" min="0">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" (click)="showRecordModal = false">Annuler</button>
+        <button class="btn-primary" (click)="saveRecord()" [disabled]="!recordForm.value.trim()">
+          {{ isEditMode ? 'Enregistrer' : 'Créer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Import Modal -->
+  <div class="modal-overlay" *ngIf="showBulkImport" (click)="showBulkImport = false">
+    <div class="modal glass-card modal-lg" (click)="$event.stopPropagation()">
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        Import en masse
+      </h3>
+      <p class="modal-desc">Collez un tableau JSON d'enregistrements DNS à importer.</p>
+      <div class="input-field full-width">
+        <label>Enregistrements JSON</label>
+        <textarea [(ngModel)]="bulkImportText" class="form-control bulk-textarea" rows="10" [placeholder]="getBulkImportPlaceholder()"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" (click)="showBulkImport = false">Annuler</button>
+        <button class="btn-primary" (click)="executeBulkImport()" [disabled]="!bulkImportText.trim()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Importer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

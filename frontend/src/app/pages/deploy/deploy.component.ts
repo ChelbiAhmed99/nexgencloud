@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ToastService } from '../../services/toast.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-deploy',
@@ -253,7 +255,7 @@ export class DeployComponent {
   dockerImage = '';
   isDeploying = false;
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router, private toastService: ToastService) {}
 
   setPreset(image: string, name: string) {
     this.dockerImage = image;
@@ -262,7 +264,7 @@ export class DeployComponent {
 
   deploy() {
     if(!this.appName || !this.dockerImage) {
-      alert("Veuillez remplir le nom et l'image Docker.");
+      this.toastService.showError('Erreur de validation', "Veuillez remplir le nom et l'image Docker.");
       return;
     }
     
@@ -271,16 +273,16 @@ export class DeployComponent {
     let token = s ? JSON.parse(s).token : '';
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
-    this.http.post('http://localhost:3000/api/apps/deploy', {
+    this.http.post(`${environment.apiUrl}/apps/deploy`, {
       name: this.appName,
       dockerImage: this.dockerImage
     }, { headers }).subscribe({
       next: () => {
-        alert('Application déployée avec succès!');
+        this.toastService.showSuccess('Déploiement initié', 'Votre application est en cours de déploiement.');
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        alert(err.error?.message || 'Erreur lors du déploiement');
+        this.toastService.showError('Erreur de déploiement', err.error?.message || 'Erreur inconnue');
         this.isDeploying = false;
       }
     });

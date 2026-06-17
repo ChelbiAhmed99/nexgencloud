@@ -41,6 +41,9 @@ export class User {
   @Column({ nullable: true })
   githubId: string;
 
+  @Column({ nullable: true })
+  microsoftId: string;
+
   @Column({ default: false })
   isTwoFactorEnabled: boolean;
 

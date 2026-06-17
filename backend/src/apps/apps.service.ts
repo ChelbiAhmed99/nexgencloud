@@ -101,6 +101,30 @@ export class AppsService {
     await this.appsRepository.remove(app);
   }
 
+  async restartApplication(appId: number, userId: number): Promise<App> {
+    const app = await this.appsRepository.findOne({
+      where: { id: appId, owner: { id: userId } },
+    });
+    if (!app) throw new NotFoundException('App not found');
+
+    this.logger.log(`[Simulation] Restarting application ${app.name}...`);
+    app.status = AppStatus.CREATING;
+    await this.appsRepository.save(app);
+
+    // Simulate restart delay
+    setTimeout(async () => {
+      try {
+        app.status = AppStatus.RUNNING;
+        await this.appsRepository.save(app);
+        this.logger.log(`[Simulation] App ${app.id} restarted successfully.`);
+      } catch (error) {
+        this.logger.error(`[Simulation] Failed to restart app: ${error.message}`);
+      }
+    }, 2000);
+
+    return app;
+  }
+
   async associateDomain(
     appId: number,
     userId: number,

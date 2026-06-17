@@ -65,6 +65,13 @@ export class AppsController {
     return this.appsService.removeApplication(Number(id), req.user.id);
   }
 
+  @Post(':id/restart')
+  @ApiOperation({ summary: 'Restart an app' })
+  @ApiResponse({ status: 200, description: 'App restart initiated.' })
+  async restartApp(@Req() req, @Param('id') id: string) {
+    return this.appsService.restartApplication(Number(id), req.user.id);
+  }
+
   @Post(':id/domain')
   @ApiOperation({ summary: 'Associate a custom domain to the app' })
   @ApiResponse({ status: 200, description: 'Domain successfully associated.' })

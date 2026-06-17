@@ -8,6 +8,7 @@ import { MainLayoutComponent } from './components/layout/main-layout/main-layout
 import { InfrastructureComponent } from './pages/admin/infrastructure.component';
 import { UsersComponent } from './pages/admin/users.component';
 import { SettingsComponent } from './pages/settings/settings.component';
+import { DnsComponent } from './pages/dns/dns.component';
 import { LoginSuccessComponent } from './pages/login/login-success.component';
 import { authGuard, adminGuard } from './guards/auth.guard';
 
@@ -24,14 +25,15 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'applications', component: ApplicationsComponent },
       { path: 'deploy', component: DeployComponent },
+      { path: 'dns', component: DnsComponent },
       { path: 'settings', component: SettingsComponent },
-      { 
-        path: 'admin/infrastructure', 
+      {
+        path: 'admin/infrastructure',
         component: InfrastructureComponent,
         canActivate: [adminGuard]
       },
-      { 
-        path: 'admin/users', 
+      {
+        path: 'admin/users',
         component: UsersComponent,
         canActivate: [adminGuard]
       }
